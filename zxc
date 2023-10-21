@@ -1,0 +1,139 @@
+from pygame import *
+from random import *
+from time import time as timer
+class Game_sprite(sprite.Sprite):
+    def __init__ (self, img, x, y,w,h,speed):
+        super().__init__()
+        self.image = transform.scale(image.load(img), (w, h))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.w = w
+        self.h = h
+        self.speed = speed
+    def reset(self):
+        win.blit(self.image, (self.rect.x, self.rect.y))
+class Player(Game_sprite):
+    def up(self):
+        keys_pressed = key.get_pressed()
+        if keys_pressed[K_a] and self.rect.x > 0:
+            self.image = transform.scale(image.load("tank4.png"), (100, 100))
+            self.rect.x = self.rect.x - self.speed
+        if keys_pressed[K_d] and self.rect.x < win_w - 100:
+            self.image = transform.scale(image.load("tank2.png"), (100, 100))
+            self.rect.x = self.rect.x + self.speed
+        if keys_pressed[K_w] and self.rect.y > 0:
+            self.image = transform.scale(image.load("tank1.png"), (100, 100))
+            self.rect.y = self.rect.y - self.speed
+        if keys_pressed[K_s] and self.rect.y < win_h - 100:
+            self.image = transform.scale(image.load("tank3.png"), (100, 100))
+            self.rect.y = self.rect.y + self.speed
+    def fire1(self):
+        bullet = Bullet1('bullet1.png', self.rect.centerx, self.rect.centery, 15, 20, -15)
+        bullets.add(bullet)
+        self.image = transform.scale(image.load("tank1.png"), (100, 100))
+    def fire2(self):
+        bullet = Bullet2('bullet2.png', self.rect.centerx, self.rect.centery, 20, 15, 15)
+        bullets.add(bullet)
+        self.image = transform.scale(image.load("tank2.png"), (100, 100))
+    def fire3(self):
+        bullet = Bullet3('bullet3.png', self.rect.centerx, self.rect.centery, 15, 20, 15)
+        bullets.add(bullet)
+        self.image = transform.scale(image.load("tank3.png"), (100, 100))
+    def fire4(self):
+        bullet = Bullet4('bullet4.png', self.rect.centerx, self.rect.centery, 20, 15, -15)
+        bullets.add(bullet)
+        self.image = transform.scale(image.load("tank4.png"), (100, 100))
+class Bullet1(Game_sprite):
+    def update(self):
+        self.rect.y += self.speed
+        if self.rect.y < 0:
+            self.kill()
+class Bullet2(Game_sprite):
+    def update(self):
+        self.rect.x += self.speed
+        if self.rect.x > win_w:
+            self.kill()
+class Bullet3(Game_sprite):
+    def update(self):
+        self.rect.y += self.speed
+        if self.rect.y > win_h:
+            self.kill()
+class Bullet4(Game_sprite):
+    def update(self):
+        self.rect.x += self.speed
+        if self.rect.x < 0:
+            self.kill()
+
+bullets=sprite.Group()
+targets = sprite.Group()
+win_w = 1500
+win_h =  800
+score = 0
+max_win = 5
+d=0
+
+font.init()
+font1 = font.SysFont('Arial', 30)
+font2 = font.SysFont('Arial', 80)
+
+win=display.set_mode((win_w,win_h))
+display.set_caption('Шутер')
+back=transform.scale(image.load('fon.jpg'), (win_w,win_h))
+
+mixer.init()
+fire = mixer.Sound('fire.ogg')
+
+
+Tank = Player("tank1.png", 500, 300,100,100,10)
+for i in range(1, 6):
+    Target = Game_sprite("target.png", randint(20,win_w - 100), randint(20,win_h - 100),100,100, 0)
+    targets.add(Target)
+
+num_fire = 0
+rel_time = False
+
+game = True
+finish = False
+
+start_time = timer()
+clock=time.Clock()
+
+while game:
+    for e in event.get():
+        if e.type == QUIT:
+            game = False
+        elif e.type == KEYDOWN:
+            if e.key == K_UP:  
+                    fire.play()
+                    Tank.fire1()
+            if e.key == K_RIGHT:  
+                    fire.play()
+                    Tank.fire2()
+            if e.key == K_DOWN:  
+                    fire.play()
+                    Tank.fire3()
+            if e.key == K_LEFT:  
+                    fire.play()
+                    Tank.fire4()
+    if not finish:
+        win.blit(back, (0,0))
+        Tank.up()
+        Tank.reset()
+        targets.draw(win)
+        bullets.update()
+        bullets.draw(win)
+        collides=sprite.groupcollide(targets, bullets, True, True)
+        for c in collides:
+            score += 1
+        now_time = timer()
+        s = now_time - start_time
+        d = (d + s)//1.99
+        text = font1.render('Время: ' + str(int(d)) + ' сек.', 1, [250, 250, 250])
+        win.blit(text, (20, 20))
+        if score >= max_win:
+            finish = True
+            vic = font2.render('Завершено за: ' + str(int(d)) + ' сек.', 1, (255, 255, 255))
+            win.blit(vic, (650, 400))
+    display.update()
+    clock.tick(60)
